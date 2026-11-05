@@ -1,0 +1,186 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Unitary\Laravel\Rules;
+
+use Brick\Math\BigNumber;
+use Closure;
+use Illuminate\Contracts\Validation\ValidationRule;
+use Throwable;
+use Unitary\Dimension;
+use Unitary\Laravel\Casts\Units;
+use Unitary\Parsing\NumberParser;
+use Unitary\Quantity;
+use Unitary\Unit;
+use Unitary\Unitary;
+
+/**
+ * Validates freeform quantity input:
+ *
+ *     new QuantityRule(Dimension::Mass)->min('1 g')->max('30 kg')
+ *     'weight' => 'quantity:mass,min:1g,max:30kg'
+ *
+ * Bare numbers are rejected unless a default unit is given with unit().
+ */
+final class QuantityRule implements ValidationRule
+{
+    /**
+     * @var ?\Unitary\Quantity<\Unitary\Unit>
+     */
+    private ?Quantity $min = null;
+
+    /**
+     * @var ?\Unitary\Quantity<\Unitary\Unit>
+     */
+    private ?Quantity $max = null;
+
+    private Unit|string|null $unit = null;
+
+    public function __construct(private readonly ?Dimension $dimension = null)
+    {
+    }
+
+    public static function of(?Dimension $dimension = null): self
+    {
+        return new self($dimension);
+    }
+
+    /**
+     * Builds a rule from string rule parameters: a dimension name, plus any of
+     * "min:<quantity>", "max:<quantity>" and "unit:<unit for bare numbers>".
+     *
+     * @param  array<array-key, string>  $parameters
+     */
+    public static function fromParameters(array $parameters): self
+    {
+        $dimension = null;
+        $options = [];
+
+        foreach ($parameters as $parameter) {
+            if (str_contains($parameter, ':')) {
+                [$option, $argument] = explode(':', $parameter, 2);
+                $options[strtolower(trim($option))] = trim($argument);
+            } elseif (trim($parameter) !== '') {
+                $dimension = Units::dimension(trim($parameter));
+            }
+        }
+
+        $rule = new self($dimension);
+
+        if (isset($options['unit'])) {
+            $rule->unit($options['unit']);
+        }
+
+        if (isset($options['min'])) {
+            $rule->min($options['min']);
+        }
+
+        if (isset($options['max'])) {
+            $rule->max($options['max']);
+        }
+
+        return $rule;
+    }
+
+    /**
+     * @param  \Unitary\Quantity<\Unitary\Unit>|string  $min
+     */
+    public function min(Quantity|string $min): self
+    {
+        $this->min = $this->quantity($min) ?? throw new \InvalidArgumentException("Invalid minimum quantity \"{$min}\"");
+
+        return $this;
+    }
+
+    /**
+     * @param  \Unitary\Quantity<\Unitary\Unit>|string  $max
+     */
+    public function max(Quantity|string $max): self
+    {
+        $this->max = $this->quantity($max) ?? throw new \InvalidArgumentException("Invalid maximum quantity \"{$max}\"");
+
+        return $this;
+    }
+
+    /**
+     * @param  \Unitary\Quantity<\Unitary\Unit>|string  $max
+     * @param  \Unitary\Quantity<\Unitary\Unit>|string  $min
+     */
+    public function between(Quantity|string $min, Quantity|string $max): self
+    {
+        return $this->min($min)->max($max);
+    }
+
+    /** The unit a bare number ("5") is interpreted in. */
+    public function unit(Unit|string $unit): self
+    {
+        $this->unit = $unit;
+
+        return $this;
+    }
+
+    public function validate(string $attribute, mixed $value, Closure $fail): void
+    {
+        $failure = $this->failure($value);
+
+        if ($failure !== null) {
+            $fail('unitary::validation.'.$failure[0])->translate($failure[1]);
+        }
+    }
+
+    /**
+     * The translation key (within unitary::validation) and replacements for why
+     * the value fails, or null when it passes.
+     *
+     * @return array{string, array<string, string>}|null
+     */
+    public function failure(mixed $value): ?array
+    {
+        $quantity = $this->quantity($value);
+
+        if ($quantity === null) {
+            return ['quantity', []];
+        }
+
+        if ($this->dimension !== null && $quantity->dimension() !== $this->dimension) {
+            return ['dimension', ['dimension' => $this->dimension->label()]];
+        }
+
+        try {
+            if ($this->min !== null && $quantity->isLessThan($this->min)) {
+                return ['min', ['min' => $this->min->toString()]];
+            }
+
+            if ($this->max !== null && $quantity->isGreaterThan($this->max)) {
+                return ['max', ['max' => $this->max->toString()]];
+            }
+        } catch (Throwable) {
+            return ['dimension', ['dimension' => ($this->min ?? $this->max)?->dimension()->label() ?? 'quantity']];
+        }
+
+        return null;
+    }
+
+    /**
+     * @return ?\Unitary\Quantity<\Unitary\Unit>
+     */
+    private function quantity(mixed $value): ?Quantity
+    {
+        if ($value instanceof Quantity) {
+            return $value;
+        }
+
+        try {
+            if ($value instanceof BigNumber || is_int($value) || is_float($value) || (is_string($value) && NumberParser::tryParse($value) !== null)) {
+                return $this->unit !== null ? Unitary::converter()->quantity($value, $this->unit) : null;
+            }
+
+            return is_string($value) && trim($value) !== ''
+                ? Unitary::converter()->parseQuantity($value, $this->dimension)
+                : null;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+}

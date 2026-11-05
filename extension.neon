@@ -1,0 +1,24 @@
+# Include this from your phpstan.neon (or install phpstan/extension-installer):
+#
+#     includes:
+#         - vendor/imliam/unitary/extension.neon
+
+services:
+    -
+        class: Unitary\PHPStan\ConvertFunctionReturnTypeExtension
+        tags: [phpstan.broker.dynamicFunctionReturnTypeExtension]
+    -
+        class: Unitary\PHPStan\StaticMethodReturnTypeExtension
+        arguments: [Unitary\Unitary]
+        tags: [phpstan.broker.dynamicStaticMethodReturnTypeExtension]
+    -
+        class: Unitary\PHPStan\StaticMethodReturnTypeExtension
+        arguments: [Unitary\Quantity]
+        tags: [phpstan.broker.dynamicStaticMethodReturnTypeExtension]
+    -
+        class: Unitary\PHPStan\QuantityMethodReturnTypeExtension
+        tags: [phpstan.broker.dynamicMethodReturnTypeExtension]
+
+rules:
+    - Unitary\PHPStan\Rules\LiteralConversionRule
+    - Unitary\PHPStan\Rules\QuantityDimensionRule

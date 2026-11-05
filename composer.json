@@ -1,0 +1,90 @@
+{
+    "name": "imliam/unitary",
+    "description": "Strongly typed, arbitrary-precision unit conversion for PHP: SI and imperial units, currencies, colour spaces and timezones.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "bignumber",
+        "calculator",
+        "colour",
+        "conversion",
+        "coordinates",
+        "currency",
+        "dimensional-analysis",
+        "inflation",
+        "laravel",
+        "measurement",
+        "phpstan",
+        "si",
+        "timezone",
+        "units"
+    ],
+    "authors": [
+        {
+            "name": "Liam Hammett",
+            "email": "liam@geocod.io"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "brick/math": "^0.14"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^11.3",
+        "pestphp/pest": "^3.0 || ^4.0",
+        "phpstan/phpstan": "^2.0",
+        "psr/http-client": "^1.0",
+        "psr/http-factory": "^1.0",
+        "psr/simple-cache": "^3.0"
+    },
+    "suggest": {
+        "psr/simple-cache": "Cache live exchange rates with any PSR-16 cache via Psr16RateCache",
+        "psr/http-client": "Use your own PSR-18 HTTP client to fetch exchange rates",
+        "illuminate/support": "Laravel integration: casts, validation rules, Blade directive, config-driven exchange rates (auto-discovered)",
+        "phpstan/extension-installer": "Registers the Unitary PHPStan extension automatically (typed quantities, unit checks on literals)",
+        "ext-intl": "Locale-specific separators in Quantity::format(locale: ...), and unit names in other languages with format(display: ...)"
+    },
+    "autoload": {
+        "psr-4": {
+            "Unitary\\": "src/"
+        },
+        "files": [
+            "src/functions.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Unitary\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "pest",
+        "analyse": "phpstan analyse"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "bin": [
+        "bin/unitary"
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Unitary\\Laravel\\UnitaryServiceProvider"
+            ],
+            "aliases": {
+                "Unitary": "Unitary\\Laravel\\Facades\\Unitary"
+            }
+        },
+        "phpstan": {
+            "includes": [
+                "extension.neon"
+            ]
+        }
+    }
+}

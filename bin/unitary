@@ -1,0 +1,21 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+// Works both inside this repository and when installed as a dependency (vendor/imliam/unitary/bin).
+foreach ([__DIR__.'/../vendor/autoload.php', __DIR__.'/../../../autoload.php', __DIR__.'/../autoload.php'] as $autoload) {
+    if (is_file($autoload)) {
+        require $autoload;
+
+        break;
+    }
+}
+
+if (! class_exists(Unitary\Cli\Application::class)) {
+    fwrite(STDERR, "Unable to find Composer's autoloader. Run `composer install` first.\n");
+
+    exit(1);
+}
+
+exit((new Unitary\Cli\Application())->run(array_values($argv), STDOUT, STDERR));
