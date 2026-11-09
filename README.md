@@ -588,6 +588,16 @@ $request->validate([
 $weight = $request->quantity('weight', dimension: Dimension::Mass);
 ```
 
+### Input Locale
+
+The `quantity` rule and `$request->quantity()` read input the way your app's locale writes it. In a German app, `1,5 kg` is one and a half kilograms and `5 Fuß 10 Zoll` is 70 inches. To read input in another locale, set `UNITARY_LOCALE` in your `.env` file, or call `locale` on a rule:
+
+```php
+QuantityRule::of(Dimension::Mass)->max('30 kg')->locale('en');
+```
+
+Anything written in code, like a rule's limits, a default value or a value set on a cast, is read the English way.
+
 ### Blade
 
 You may format a quantity in your Blade templates using the `@quantity` directive:

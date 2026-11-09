@@ -268,6 +268,15 @@ final class NumberWords
                 break;
             }
 
+            // British writing may put a comma after a scale word: "one thousand, two hundred".
+            // Only skip it when another number word follows, so "2 lb, 3 oz" stays two parts.
+            if (($tokens[$i + 1] ?? '') === ',' && isset(self::LARGE[self::key($token)])
+                && ctype_space($tokens[$i + 2] ?? '') && self::isNumberWord(self::key(explode('-', $tokens[$i + 3] ?? '')[0]))) {
+                $i++;
+
+                continue;
+            }
+
             if (! isset($tokens[$i + 1]) || ! ctype_space($tokens[$i + 1])) {
                 break;
             }

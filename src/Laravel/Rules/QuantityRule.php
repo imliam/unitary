@@ -10,7 +10,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Throwable;
 use Unitary\Dimension;
 use Unitary\Laravel\Casts\Units;
-use Unitary\Parsing\NumberParser;
+use Unitary\Laravel\InputLocale;
 use Unitary\Quantity;
 use Unitary\Unit;
 use Unitary\Unitary;
@@ -36,6 +36,8 @@ final class QuantityRule implements ValidationRule
     private ?Quantity $max = null;
 
     private Unit|string|null $unit = null;
+
+    private ?string $locale = null;
 
     public function __construct(private readonly ?Dimension $dimension = null)
     {
@@ -112,6 +114,17 @@ final class QuantityRule implements ValidationRule
         return $this->min($min)->max($max);
     }
 
+    /**
+     * The locale input is written in, like "de" for "1,5 kg" or "5 Fuß". Defaults to
+     * config unitary.locale, else the app's locale. Use "en" to read input the English way.
+     */
+    public function locale(?string $locale): self
+    {
+        $this->locale = $locale;
+
+        return $this;
+    }
+
     /** The unit a bare number ("5") is interpreted in. */
     public function unit(Unit|string $unit): self
     {
@@ -137,7 +150,7 @@ final class QuantityRule implements ValidationRule
      */
     public function failure(mixed $value): ?array
     {
-        $quantity = $this->quantity($value);
+        $quantity = $this->quantity($value, $this->locale ?? InputLocale::current());
 
         if ($quantity === null) {
             return ['quantity', []];
@@ -163,22 +176,22 @@ final class QuantityRule implements ValidationRule
     }
 
     /**
+     * Limits are written in code, so they're read the English way. Input is read in $locale.
+     *
      * @return ?\Unitary\Quantity<\Unitary\Unit>
      */
-    private function quantity(mixed $value): ?Quantity
+    private function quantity(mixed $value, string $locale = 'en'): ?Quantity
     {
         if ($value instanceof Quantity) {
             return $value;
         }
 
-        try {
-            if ($value instanceof BigNumber || is_int($value) || is_float($value) || (is_string($value) && NumberParser::tryParse($value) !== null)) {
-                return $this->unit !== null ? Unitary::converter()->quantity($value, $this->unit) : null;
-            }
+        if (! $value instanceof BigNumber && ! is_int($value) && ! is_float($value) && ! (is_string($value) && trim($value) !== '')) {
+            return null;
+        }
 
-            return is_string($value) && trim($value) !== ''
-                ? Unitary::converter()->parseQuantity($value, $this->dimension)
-                : null;
+        try {
+            return InputLocale::quantity($value, $this->dimension, $this->unit, $locale);
         } catch (Throwable) {
             return null;
         }

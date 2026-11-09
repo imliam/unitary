@@ -9,7 +9,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Unitary\Dimension;
 use Unitary\Exceptions\ParseException;
-use Unitary\Parsing\NumberParser;
 use Unitary\Quantity;
 use Unitary\Unit;
 use Unitary\Unitary;
@@ -35,6 +34,9 @@ final class Macros
     /**
      * $request->quantity('weight'), $request->quantity('weight', '0 kg', Dimension::Mass, unit: 'kg')
      *
+     * Input is read the way the input locale writes it (config unitary.locale, else the
+     * app's), so "1,5 kg" is one and a half kilograms in German.
+     *
      * @throws ParseException when the input is present but isn't a quantity
      *
      * @param  \Unitary\Quantity<\Unitary\Unit>|string|null  $default
@@ -48,15 +50,20 @@ final class Macros
             $value = $default;
         }
 
-        return match (true) {
-            $value === null, $value instanceof Quantity => $value,
-            $value instanceof BigNumber, is_int($value), is_float($value),
-            is_string($value) && NumberParser::tryParse($value) !== null => $unit !== null
-                ? Unitary::converter()->quantity($value, $unit)
-                : throw ParseException::cannotParse((string) $value, 'quantity', 'a unit is required'),
-            is_string($value) => Unitary::converter()->parseQuantity($value, $dimension),
-            default => throw ParseException::cannotParse(get_debug_type($value), 'quantity'),
-        };
+        if ($value === null || $value instanceof Quantity) {
+            return $value;
+        }
+
+        if (! $value instanceof BigNumber && ! is_int($value) && ! is_float($value) && ! is_string($value)) {
+            throw ParseException::cannotParse(get_debug_type($value), 'quantity');
+        }
+
+        // A default comes from code, so it's read the English way. Input is read the way
+        // the input locale writes it: "1,5 kg" in German.
+        $locale = $value === $default && $request->input($key) !== $value ? 'en' : InputLocale::current();
+
+        return InputLocale::quantity($value, $dimension, $unit, $locale)
+            ?? throw ParseException::cannotParse((string) $value, 'quantity', 'a unit is required');
     }
 
     /**

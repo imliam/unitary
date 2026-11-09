@@ -32,6 +32,21 @@ return [
 
     'region' => env('UNITARY_REGION'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Input locale
+    |--------------------------------------------------------------------------
+    |
+    | The locale people type quantities in, for $request->quantity() and the
+    | quantity validation rule. In German, "1,5 kg" is one and a half
+    | kilograms and "5 Fuß 10 Zoll" is 70 inches. When this is null, the app
+    | locale is used. Set it to "en" to read input the English way. Values
+    | set in code, like casts, are always read the English way.
+    |
+    */
+
+    'locale' => env('UNITARY_LOCALE'),
+
     'exchange_rates' => [
         'provider' => env('UNITARY_EXCHANGE_RATES', 'ecb'),
 
