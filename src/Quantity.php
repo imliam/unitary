@@ -158,6 +158,8 @@ final readonly class Quantity implements JsonSerializable, Stringable
      * The value as a decimal. With no scale, the exact value is returned when it
      * terminates within DEFAULT_PRECISION decimal places; otherwise it's rounded
      * to DEFAULT_PRECISION significant digits.
+     *
+     * @param  non-negative-int|null  $scale
      */
     public function toDecimal(?int $scale = null, RoundingMode $roundingMode = RoundingMode::HalfUp): BigDecimal
     {
@@ -230,10 +232,10 @@ final readonly class Quantity implements JsonSerializable, Stringable
      */
     public function mapped(Closure $conversion, Unit $unit, Converter $converter): self
     {
-        $value = $conversion($this->value)->simplified();
+        $value = $conversion($this->value);
         $uncertainty = $this->uncertainty === null
             ? null
-            : $conversion($this->value->plus($this->uncertainty))->minus($value)->abs()->simplified();
+            : $conversion($this->value->plus($this->uncertainty))->minus($value)->abs();
 
         return new self($value, $unit, $converter, $uncertainty, $this->significantFigures);
     }
@@ -490,6 +492,8 @@ final readonly class Quantity implements JsonSerializable, Stringable
      * With a $display (narrow, short or long), the unit is written the way CLDR
      * writes it in that locale: "2″", "2 in", "2 inches", or "2 pouces" in
      * French. Without one, the unit is Unitary's symbol, whatever the locale.
+     *
+     * @param  non-negative-int|null  $decimals
      */
     public function format(
         ?int $decimals = null,
@@ -541,7 +545,7 @@ final readonly class Quantity implements JsonSerializable, Stringable
     public function toPrecision(?int $significantFigures = null, bool $withUnit = true): string
     {
         $significantFigures ??= $this->significantFigures ?? self::DEFAULT_PRECISION;
-        $scale = $this->value->isZero() ? $significantFigures - 1 : max(0, $significantFigures - 1 - $this->exponent());
+        $scale = $this->value->isZero() ? max(0, $significantFigures - 1) : max(0, $significantFigures - 1 - $this->exponent());
         $number = (string) $this->value->toScale($scale, RoundingMode::HalfUp);
 
         return $withUnit ? $this->joinUnit($number) : $number;
@@ -622,7 +626,11 @@ final readonly class Quantity implements JsonSerializable, Stringable
         return $absolute->isLessThan(Exact::power(BigRational::ten(), $exponent)) ? $exponent - 1 : $exponent;
     }
 
-    /** Decimal places that show the uncertainty to two significant figures. */
+    /**
+     * Decimal places that show the uncertainty to two significant figures.
+     *
+     * @return non-negative-int
+     */
     private function uncertaintyScale(): int
     {
         if ($this->uncertainty === null || $this->uncertainty->isZero()) {
@@ -684,7 +692,7 @@ final readonly class Quantity implements JsonSerializable, Stringable
             $significantFigures = min($significantFigures ?? PHP_INT_MAX, $other->significantFigures);
         }
 
-        return new self($value->simplified(), $unit, $this->converter, $uncertainty?->simplified(), $significantFigures);
+        return new self($value, $unit, $this->converter, $uncertainty, $significantFigures);
     }
 
     /**

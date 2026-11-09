@@ -56,7 +56,7 @@ final class BigMacIndex extends RateTableProvider
         $rates = [];
 
         foreach ($prices as $code => $price) {
-            $rates[$code] = $price->dividedBy($usPrice)->simplified();
+            $rates[$code] = $price->dividedBy($usPrice);
         }
 
         return new RateTable(Currency::USD, $rates, new DateTimeImmutable($date), $this->name());

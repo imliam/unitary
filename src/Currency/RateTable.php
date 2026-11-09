@@ -55,7 +55,7 @@ final readonly class RateTable
         $fromRate = $this->rates[$from->value] ?? throw ExchangeRateUnavailableException::for($from, $to, $this->source);
         $toRate = $this->rates[$to->value] ?? throw ExchangeRateUnavailableException::for($from, $to, $this->source);
 
-        return new ExchangeRate($from, $to, $toRate->dividedBy($fromRate)->simplified(), $this->date, $this->source);
+        return new ExchangeRate($from, $to, $toRate->dividedBy($fromRate), $this->date, $this->source);
     }
 
     /**

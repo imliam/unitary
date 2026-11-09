@@ -19,6 +19,7 @@ final readonly class Options
 
     /**
      * @param  list<string>  $arguments
+     * @param  non-negative-int|null  $precision
      */
     public function __construct(
         public array $arguments = [],
@@ -115,7 +116,7 @@ final readonly class Options
             noColor: $flags['no-color'],
             help: $flags['help'],
             version: $flags['version'],
-            precision: $precision !== null ? (int) $precision : null,
+            precision: $precision !== null ? max(0, (int) $precision) : null,
             rates: $rates,
             plain: $flags['plain'],
             locale: $values['locale'],

@@ -170,6 +170,7 @@ final class Transcendental
         return $ln2 ??= self::atanhLog(BigDecimal::of(2));
     }
 
+    /** @return non-negative-int */
     private static function scale(): int
     {
         return self::PRECISION + self::GUARD;

@@ -425,6 +425,10 @@ final class Evaluator
         $first = $arguments[0];
         $places = isset($arguments[1]) && in_array($function, ['round', 'floor', 'ceil'], true) ? $this->scalar($arguments[1])->toBigInteger()->toInt() : 0;
 
+        if ($places < 0) {
+            throw ParseException::cannotParse($expression, 'expression', sprintf('%s() needs a non-negative number of decimal places', $function));
+        }
+
         $rounded = fn (RoundingMode $mode) => new Quantity($first->value()->toScale($places, $mode)->toBigRational(), $first->unit(), $this->converter);
 
         return match ($function) {

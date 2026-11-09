@@ -82,6 +82,8 @@ final readonly class Breakdown implements JsonSerializable, Stringable
 
     /**
      * Rounds the smallest part, carrying into larger ones (5 ft 11.99 in → 6 ft 0 in at 0 dp).
+     *
+     * @param  non-negative-int  $decimals
      */
     public function rounded(int $decimals = 0): self
     {
@@ -108,6 +110,8 @@ final readonly class Breakdown implements JsonSerializable, Stringable
     /**
      * "5 ft 11 in". With a locale or display (see Quantity::format()), each part
      * is written that way: "5 pieds 11 pouces" for fr and UnitDisplay::Long.
+     *
+     * @param  non-negative-int|null  $decimals
      */
     public function toString(?int $decimals = null, ?string $locale = null, UnitDisplay|string|null $display = null): string
     {

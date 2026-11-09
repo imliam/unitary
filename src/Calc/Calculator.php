@@ -186,7 +186,7 @@ final class Calculator
     private function percentPhrase(string $line, Context $context): ?Quantity
     {
         $eval = fn (string $expression) => $this->evaluator->evaluate($expression, $context);
-        $percent = fn (BigRational $ratio) => new Quantity($ratio->multipliedBy(100)->simplified(), Ratio::Percent, $this->converter());
+        $percent = fn (BigRational $ratio) => new Quantity($ratio->multipliedBy(100), Ratio::Percent, $this->converter());
 
         return match (true) {
             // "$50 as a % of $200" → 25%, "50 is what % of 200" → 25%

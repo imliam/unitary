@@ -29,7 +29,7 @@ final readonly class GasMark implements Scale
 
         foreach (self::MARKS as $known) {
             if ($value !== null && $value->isEqualTo(BigRational::of($known))) {
-                return new self($value->simplified());
+                return new self($value);
             }
         }
 

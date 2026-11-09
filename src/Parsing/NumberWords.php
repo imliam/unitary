@@ -571,8 +571,6 @@ final class NumberWords
 
     private static function format(BigRational $value, bool $decimal): string
     {
-        $value = $value->simplified();
-
         if ($value->getDenominator()->isEqualTo(1)) {
             return (string) $value->getNumerator();
         }
@@ -586,7 +584,7 @@ final class NumberWords
 
         $absolute = $value->abs();
         $whole = $absolute->getIntegralPart();
-        $fraction = $absolute->getFractionalPart()->simplified();
+        $fraction = $absolute->getFractionalPart();
         $sign = $value->isNegative() ? '-' : '';
         $fractionText = $fraction->getNumerator().'/'.$fraction->getDenominator();
 

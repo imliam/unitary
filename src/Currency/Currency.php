@@ -197,7 +197,11 @@ enum Currency: string implements Unit
         return $this->data()[0];
     }
 
-    /** Number of digits after the decimal point in the minor unit (2 for GBP, 0 for JPY, 3 for KWD). */
+    /**
+     * Number of digits after the decimal point in the minor unit (2 for GBP, 0 for JPY, 3 for KWD).
+     *
+     * @return non-negative-int
+     */
     public function minorUnits(): int
     {
         return $this->data()[1];
@@ -227,7 +231,7 @@ enum Currency: string implements Unit
     }
 
     /**
-     * @return array{string, int, list<string>, list<string>}
+     * @return array{string, non-negative-int, list<string>, list<string>}
      */
     private function data(): array
     {

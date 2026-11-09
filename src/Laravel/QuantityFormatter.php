@@ -26,6 +26,7 @@ final class QuantityFormatter
      * language: @quantity($distance, 0, display: 'long') → "5 kilomètres".
      *
      * @param  \Unitary\Quantity<\Unitary\Unit>|BigNumber|string|null  $quantity
+     * @param  non-negative-int|null  $decimals
      */
     public static function format(Quantity|BigNumber|string|null $quantity, ?int $decimals = null, ?string $unit = null, ?string $usage = null, UnitDisplay|string|null $display = null): string
     {

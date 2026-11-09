@@ -53,7 +53,7 @@ final class Inflation
             throw InflationDataUnavailableException::noIndex($currency);
         }
 
-        return $money->multipliedBy(self::figure($index, $to)->dividedBy(self::figure($index, $from))->simplified());
+        return $money->multipliedBy(self::figure($index, $to)->dividedBy(self::figure($index, $from)));
     }
 
     /**
@@ -61,7 +61,7 @@ final class Inflation
      */
     public static function factor(PriceIndex $index, int|DateTimeInterface $from, int|DateTimeInterface|null $to = null): BigRational
     {
-        return self::figure($index, $to)->dividedBy(self::figure($index, $from))->simplified();
+        return self::figure($index, $to)->dividedBy(self::figure($index, $from));
     }
 
     public static function indexFor(Currency $currency): ?PriceIndex

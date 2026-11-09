@@ -27,7 +27,7 @@
     ],
     "require": {
         "php": "^8.2",
-        "brick/math": "^0.14"
+        "brick/math": "^1"
     },
     "require-dev": {
         "orchestra/testbench": "^11.3",
