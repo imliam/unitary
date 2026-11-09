@@ -119,12 +119,14 @@ final readonly class QuantityParser
     }
 
     /**
-     * Rewrites the locale's numbers the English way ("1.234,5" → "1234.5") and its word for
-     * "and" between parts as "and" ("5 Fuß und 10 Zoll" → "5 Fuß and 10 Zoll").
+     * Rewrites the locale's numbers the English way ("1.234,5" → "1234.5"), its number words
+     * and idioms as numerals ("dreieinhalb" → "3 1/2"), and its word for "and" between
+     * parts as "and" ("5 Fuß und 10 Zoll" → "5 Fuß and 10 Zoll").
      */
     private static function localize(string $input, string $locale): string
     {
-        $text = LocalizedNumbers::normalize($input, $locale);
+        // Numerals first, so numbers that come from words aren't read as the locale's numerals.
+        $text = LocalizedNumberWords::normalize(LocalizedNumbers::normalize($input, $locale), $locale);
 
         foreach (LocalizedUnitNames::conjunctions($locale) as $conjunction) {
             if ($conjunction !== 'and') {

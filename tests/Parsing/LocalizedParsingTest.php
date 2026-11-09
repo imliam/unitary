@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Unitary\Exceptions\ParseException;
 use Unitary\Parsing\LocalizedNumbers;
+use Unitary\Parsing\LocalizedNumberWords;
 use Unitary\Parsing\LocalizedUnitNames;
 use Unitary\Quantity;
 
@@ -92,4 +93,61 @@ it('knows the locale’s word for "and"', function () {
     expect(LocalizedUnitNames::conjunctions('de'))->toBe(['und'])
         ->and(LocalizedUnitNames::conjunctions('fr'))->toBe(['et'])
         ->and(LocalizedUnitNames::conjunctions('ja'))->toBe([]);
+});
+
+it('reads numbers written as words in the locale’s language', function (string $input, string $locale, string $expected) {
+    expect(Quantity::parse($input, $locale)->format())->toBe($expected);
+})->with([
+    'German' => ['zwei Meter', 'de', '2 m'],
+    'a German compound number' => ['zweitausendeins Meter', 'de', '2,001 m'],
+    'German feet and inches in words' => ['fünf Fuß und zehn Zoll', 'de', '70 in'],
+    'French' => ['quatre-vingt-dix-neuf mètres', 'fr', '99 m'],
+    'Spanish' => ['dos mil uno metros', 'es', '2,001 m'],
+    'Italian' => ['tre chilogrammi', 'it', '3 kg'],
+    'Russian' => ['две тысячи один метр', 'ru', '2,001 m'],
+    'Chinese, written without a space' => ['五英尺', 'zh', '5 ft'],
+    'Japanese, written without a space' => ['二千一メートル', 'ja', '2,001 m'],
+]);
+
+it('reads the locale’s idioms for halves, quarters and dozens', function (string $input, string $locale, string $expected) {
+    expect(Quantity::parse($input, $locale)->format(2))->toBe($expected);
+})->with([
+    ['dreieinhalb Kilogramm', 'de', '3.50 kg'],
+    ['eineinhalb Liter', 'de', '1.50 L'],
+    ['anderthalb Stunden', 'de', '1.50 h'],
+    ['eine halbe Stunde', 'de', '0.50 h'],
+    ['dreiviertel Liter', 'de', '0.75 L'],
+    ['zwei Dutzend kg', 'de', '24.00 kg'],
+    ['deux heures et demie', 'fr', '2.50 h'],
+    ['un demi-litre', 'fr', '0.50 L'],
+    ['trois quarts d’heure', 'fr', '0.75 h'],
+    ['une douzaine de mètres', 'fr', '12.00 m'],
+    ['dos horas y media', 'es', '2.50 h'],
+    ['media hora', 'es', '0.50 h'],
+    ['una docena de metros', 'es', '12.00 m'],
+    ['due ore e mezza', 'it', '2.50 h'],
+    ['duas horas e meia', 'pt', '2.50 h'],
+    ['tweeënhalf uur', 'nl', '2.50 h'],
+    ['anderhalf uur', 'nl', '1.50 h'],
+]);
+
+it('still reads English number words with a locale', function () {
+    expect(Quantity::parse('a dozen kg', 'de')->format())->toBe('12 kg')
+        ->and(Quantity::parse('two and a half miles', 'fr')->format(1))->toBe('2.5 mi');
+});
+
+it('doesn’t read a number word straight after a numeral, where it’s a unit', function () {
+    // In French, "mille" is a thousand, and "milles" is part of some mile names.
+    expect(fn () => Quantity::parse('5 milles', 'fr'))->toThrow(ParseException::class);
+});
+
+it('doesn’t read the start of a longer word as a number', function () {
+    // "Dreieck" (triangle) starts with "drei" (three).
+    expect(LocalizedNumberWords::normalize('ein Dreieck', 'de'))->toBe('1 Dreieck')
+        ->and(LocalizedNumberWords::normalize('Dreieck', 'de'))->toBe('Dreieck');
+});
+
+it('reads the locale’s numerals before its number words, so they aren’t read twice', function () {
+    expect(Quantity::parse('1.255 kg', 'de')->format())->toBe('1,255 kg')
+        ->and(Quantity::parse('3,5 kg', 'de')->format())->toBe('3.5 kg');
 });
