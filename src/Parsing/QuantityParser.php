@@ -35,17 +35,30 @@ final readonly class QuantityParser
     }
 
     /**
+     * With a locale, numbers may be written the way the locale writes them ("1,5 kg" in
+     * German), units may be named in its language ("5 Fuß 10 Zoll"), and parts may be
+     * joined with its word for "and" ("5 pieds et 10 pouces"). English still works too.
+     *
      * @return \Unitary\Quantity<\Unitary\Unit>
      */
-    public function parse(string $input, ?Dimension $prefer = null): Quantity
+    public function parse(string $input, ?Dimension $prefer = null, ?string $locale = null): Quantity
     {
-        $text = self::normalize(NumberWords::normalize($input));
+        return $this->parseText(self::normalize(NumberWords::normalize($locale === null ? $input : self::localize($input, $locale))), $input, $prefer, $locale);
+    }
 
+    /**
+     * Parses text whose numbers have already been rewritten the English way, so they aren't
+     * read a second time as the locale's: German "1,234" is 1.234, not 1234.
+     *
+     * @return \Unitary\Quantity<\Unitary\Unit>
+     */
+    private function parseText(string $text, string $input, ?Dimension $prefer, ?string $locale): Quantity
+    {
         if (preg_match('/^(?<value>.+?)\s*(?:±|\+\/-|\+-)\s*(?<uncertainty>.+)$/u', $text, $matches)) {
-            return $this->withUncertainty(trim($matches['value'], ' ('), trim(str_replace(')', '', $matches['uncertainty'])), $input, $prefer);
+            return $this->withUncertainty(trim($matches['value'], ' ('), trim(str_replace(')', '', $matches['uncertainty'])), $input, $prefer, $locale);
         }
 
-        $terms = $this->terms($text, $input);
+        $terms = $this->terms($text, $input, $locale);
 
         $dimension = $this->commonDimension($terms, $prefer)
             ?? throw ParseException::cannotParse($input, 'quantity', count($terms) > 1
@@ -70,15 +83,19 @@ final readonly class QuantityParser
      *
      * @return \Unitary\Quantity<\Unitary\Unit>
      */
-    private function withUncertainty(string $value, string $uncertainty, string $input, ?Dimension $prefer): Quantity
+    private function withUncertainty(string $value, string $uncertainty, string $input, ?Dimension $prefer, ?string $locale): Quantity
     {
-        $error = $this->tryParse($uncertainty, $prefer);
+        try {
+            $error = $this->parseText($uncertainty, $uncertainty, $prefer, $locale);
+        } catch (ParseException|IncompatibleUnitsException) {
+            $error = null;
+        }
 
         if (NumberParser::tryParse($value) !== null && $error !== null) {
             return (new Quantity($value, $error->unit(), $this->converter, $error->value(), NumberParser::significantFigures($value)));
         }
 
-        $quantity = $this->parse($value, $prefer);
+        $quantity = $this->parseText($value, $input, $prefer, $locale);
 
         if ($error !== null) {
             return $quantity->withUncertainty($error);
@@ -92,13 +109,30 @@ final readonly class QuantityParser
     /**
      * @return ?\Unitary\Quantity<\Unitary\Unit>
      */
-    public function tryParse(string $input, ?Dimension $prefer = null): ?Quantity
+    public function tryParse(string $input, ?Dimension $prefer = null, ?string $locale = null): ?Quantity
     {
         try {
-            return $this->parse($input, $prefer);
+            return $this->parse($input, $prefer, $locale);
         } catch (ParseException|IncompatibleUnitsException) {
             return null;
         }
+    }
+
+    /**
+     * Rewrites the locale's numbers the English way ("1.234,5" → "1234.5") and its word for
+     * "and" between parts as "and" ("5 Fuß und 10 Zoll" → "5 Fuß and 10 Zoll").
+     */
+    private static function localize(string $input, string $locale): string
+    {
+        $text = LocalizedNumbers::normalize($input, $locale);
+
+        foreach (LocalizedUnitNames::conjunctions($locale) as $conjunction) {
+            if ($conjunction !== 'and') {
+                $text = (string) preg_replace('/\s+'.preg_quote($conjunction, '/').'\s+(?=[-+]?\d)/iu', ' and ', $text);
+            }
+        }
+
+        return $text;
     }
 
     public static function normalize(string $input): string
@@ -111,7 +145,7 @@ final readonly class QuantityParser
      *
      * @return non-empty-list<array{value: BigRational, unit: string, significantFigures: ?int}>
      */
-    private function terms(string $text, string $input): array
+    private function terms(string $text, string $input, ?string $locale = null): array
     {
         $pattern = '/\G(?<pre>\s*(?:,|\+|&|and\b)?\s*)(?<sign>[-+])?\s*(?<symbol>[^\d\s.,½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅐⅛⅜⅝⅞⅑⅒+-][^\d½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅐⅛⅜⅝⅞⅑⅒]*?)??\s*(?<sign2>-)?'.NumberParser::PATTERN.'/iu';
 
@@ -138,6 +172,11 @@ final readonly class QuantityParser
             }
 
             [$unit, $offset] = $this->unitText($text, $offset);
+
+            // A unit named in the locale's language, like "Fuß", is read as its Unitary symbol.
+            if ($locale !== null && $unit !== '') {
+                $unit = LocalizedUnitNames::symbolFor($unit, $locale) ?? $unit;
+            }
 
             if ($symbol !== '') {
                 // "£23", "US$ 5", "GBP 23": a currency written before the amount, or a rate: "$20/day".

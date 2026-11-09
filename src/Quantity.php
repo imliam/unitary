@@ -76,9 +76,9 @@ final readonly class Quantity implements JsonSerializable, Stringable
     /**
      * @return self<Unit>
      */
-    public static function parse(string $input): self
+    public static function parse(string $input, ?string $locale = null): self
     {
-        return Unitary::converter()->parseQuantity($input);
+        return Unitary::converter()->parseQuantity($input, locale: $locale);
     }
 
     /**

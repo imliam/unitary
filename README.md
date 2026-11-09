@@ -129,6 +129,23 @@ convert('€30/day in €/month');
 convert('80 kmph in m/s');
 ```
 
+### Other Languages
+
+`Quantity::parse` accepts a locale, so you may read quantities written the way people write them in that language:
+
+```php
+Quantity::parse('1,5 kg', 'de');                // 1.5 kg
+Quantity::parse('5 Fuß und 10 Zoll', 'de');     // 70 in
+Quantity::parse('1 234,5 mètres', 'fr');        // 1234.5 m
+Quantity::parse('178 сантиметров', 'ru');       // 178 cm
+Quantity::parse('١٢٫٥ كيلوغرام', 'ar');          // 12.5 kg
+```
+
+Numbers may use the locale's separators and digits. A number only counts as the locale's when it fits the locale's pattern, so `1.5` still means one and a half in German, while `1.234,5` means one thousand two hundred and thirty-four and a half. Units may be named in the locale's language, in any of the plural forms and grammatical cases CLDR has, and parts may be joined with its word for "and". English input still works.
+
+> [!NOTE]
+> Unit names in other languages need the `intl` extension. Without it, numbers are still read the locale's way for common locales, but units must be written in English.
+
 ### Ambiguous Input
 
 Some text could mean more than one thing. Unitary picks the most common meaning and uses the rest of the conversion to break ties:

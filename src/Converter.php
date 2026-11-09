@@ -358,15 +358,16 @@ final class Converter
     }
 
     /**
-     * Parses freeform text that must be a quantity, e.g. "13' 11\"" or "£23".
+     * Parses freeform text that must be a quantity, e.g. "13' 11\"" or "£23". With a locale,
+     * it may be written the way that locale writes it, e.g. "5 Fuß 10 Zoll" or "1,5 kg" in "de".
      *
      * @return Quantity<Unit>
      *
      * @throws ParseException
      */
-    public function parseQuantity(string $input, ?Dimension $prefer = null): Quantity
+    public function parseQuantity(string $input, ?Dimension $prefer = null, ?string $locale = null): Quantity
     {
-        return $this->parser->parse($input, $prefer);
+        return $this->parser->parse($input, $prefer, $locale);
     }
 
     /**
